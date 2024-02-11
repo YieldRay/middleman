@@ -1,0 +1,8 @@
+Website = "https://github.com/YieldRay/middleman"
+
+[Details]
+  Icon = "Icon.png"
+  Name = "middleman"
+  ID = "io.github.yieldray.middleman"
+  Version = "0.1.0"
+  Build = 3

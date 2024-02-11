@@ -2,48 +2,44 @@ package interceptor
 
 import (
 	"bufio"
+	"github.com/yieldray/middleman/utils"
 	"net"
 	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
-
-	"github.com/mborders/logmatic"
-	"github.com/yieldray/middleman/cmd/flags"
 )
 
-var l = logmatic.NewLogger()
+// httpProxyAddr: where the http proxy server listen to
+//
+// httpClient: the client that handle the intercepted request
+func Entry(httpProxyAddr string, httpClient http.Client,
+	caKeyPath string, caCrtPath string) (fatalErrorChan chan error, shutdown func()) {
+	fatalErrorChan = make(chan error, 1)
 
-func init() {
-	l.SetLevel(logmatic.LogLevel(flags.LogLevel))
-}
+	var tcpListener net.Listener = nil
+	var httpsServer *http.Server = nil
 
-func Entry(httpProxyAddr string, httpClient http.Client, caKeyPath string, caCrtPath string) {
-	ln, err := net.Listen("tcp", httpProxyAddr)
+	// listen tcp
+	tcpListener, err := net.Listen("tcp", httpProxyAddr)
 	if err != nil {
-		l.Fatal("%s", err)
+		fatalErrorChan <- err
+		return fatalErrorChan, func() {}
 	}
-	l.Info("代理服务器运行在 %s", ln.Addr().String())
+
+	l.Info("HTTP proxy server running at %s", tcpListener.Addr().String())
 
 	// set system proxy
-	if err := setProxySettings(httpProxyAddr); err == nil {
-		l.Info("已设置系统代理为 %s", httpProxyAddr)
+	if err := utils.SetProxySettings(httpProxyAddr); err == nil {
+		l.Info("System proxy has been set to %s", httpProxyAddr)
 
 		var turnOffSystemProxy = func() {
-			if err := disableProxySettings(); err != nil {
+			if err := utils.DisableProxySettings(); err != nil {
 				l.Warn("%s", err)
 			} else {
-				l.Info("已关闭系统代理")
+				l.Info("System proxy has been closed")
 			}
 		}
-
-		// when error
-		defer func() {
-			if err := recover(); err != nil {
-				turnOffSystemProxy()
-				l.Fatal("%s", err)
-			}
-		}()
 
 		// when Ctrl-C
 		sigChan := make(chan os.Signal, 1)
@@ -57,35 +53,55 @@ func Entry(httpProxyAddr string, httpClient http.Client, caKeyPath string, caCrt
 		l.Warn("%s", err)
 	}
 
-	// run https server in the background
+	// listen https
 	go func() {
-		var server = startHttpsServer(caKeyPath, caCrtPath, httpClient)
-		server.ListenAndServeTLS("", "")
-		defer server.Close()
+		httpsServer, err := confHttpsServer(caKeyPath, caCrtPath, httpClient)
+		if err != nil {
+			fatalErrorChan <- err
+			return
+		}
+		httpsServer.ListenAndServeTLS("", "")
 	}()
 
 	// listen tcp server
-	for {
-		conn, err := ln.Accept()
-		if err != nil {
-			l.Error("%#v", err)
-			continue
-		}
-
-		// handle it
-		go func(conn net.Conn) {
-			req, err := http.ReadRequest(bufio.NewReader(conn))
-
+	go func() {
+		for {
+			conn, err := tcpListener.Accept()
 			if err != nil {
-				l.Error("%s", err)
-				conn.Close()
-				return
+				// stop accept when closed
+				if opErr, ok := err.(*net.OpError); ok && opErr.Err == net.ErrClosed {
+					return
+				}
+
+				l.Error("%#v", err)
+				continue
 			}
-			if req.Method == "CONNECT" {
-				handleProxyHTTPS(conn, req, "127.0.0.1:9443")
-			} else {
-				handleProxyHTTP(conn, req, httpClient)
-			}
-		}(conn)
+
+			// handle it
+			go func(conn net.Conn) {
+				req, err := http.ReadRequest(bufio.NewReader(conn))
+
+				if err != nil {
+					l.Error("%s", err)
+					conn.Close()
+					return
+				}
+				if req.Method == "CONNECT" {
+					handleProxyHTTPS(conn, req)
+				} else {
+					handleProxyHTTP(conn, req, httpClient)
+				}
+			}(conn)
+		}
+	}()
+
+	return fatalErrorChan, func() {
+		if tcpListener != nil {
+			utils.DisableProxySettings()
+			tcpListener.Close()
+		}
+		if httpsServer != nil {
+			httpsServer.Close()
+		}
 	}
 }

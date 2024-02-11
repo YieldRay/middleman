@@ -1,11 +1,11 @@
 package flags
 
 var (
-	CaKey    string
-	CaCrt    string
-	LogLevel uint8
-	Port     int
-	Expose   bool
-	Log      bool
+	CaKey    string = "./ca.key"
+	CaCrt    string = "./ca.crt"
+	LogLevel uint8  = 2
+	Port     int    = 9980
+	Expose   bool   = false
+	Log      bool   = false
 	LogPath  string
 )

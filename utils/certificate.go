@@ -1,4 +1,4 @@
-package interceptor
+package utils
 
 import (
 	"crypto/ecdsa"
@@ -8,72 +8,72 @@ import (
 	"crypto/x509"
 	"crypto/x509/pkix"
 	"encoding/pem"
+	"fmt"
 	"math/big"
-	"net/http"
 	"os"
-	"strings"
 	"time"
 )
 
-// Return http.Server, but need to serve it:
-// server.ListenAndServeTLS("", "")
-func createHttpsServer(caKeyPath, caCertPath, addr string, handler func(http.ResponseWriter, *http.Request)) *http.Server {
+type keyCert struct {
+	key  any
+	cert *x509.Certificate
+}
+
+var cacheKeyCert = make(map[string]map[string]keyCert, 1)
+
+// load key and cert by given path
+func LoadKeyCert(caKeyPath, caCertPath string) (caKey any, caCert *x509.Certificate, err error) {
+
+	if keyCert, ok := cacheKeyCert[caKeyPath][caCertPath]; ok {
+		// only load once
+		return keyCert.key, keyCert.cert, nil
+	}
 
 	caKeyPEM, err := os.ReadFile(caKeyPath)
 	if err != nil {
-		l.Warn("要生成 CA 密钥，运行 $ openssl genpkey -algorithm RSA -out ca.key")
-		panic(err)
+		return nil, nil, fmt.Errorf("%v\n    ($ openssl geeky -algorithm RSA -out ca.key)", err)
 	}
 
 	caKeyBlock, _ := pem.Decode(caKeyPEM)
 
-	caKey, err := x509.ParsePKCS8PrivateKey(caKeyBlock.Bytes)
+	caKey, err = x509.ParsePKCS8PrivateKey(caKeyBlock.Bytes)
 	if err != nil {
-		l.Fatal("%s", err)
+		return nil, nil, err
 	}
 
 	caCertPEM, err := os.ReadFile(caCertPath)
 	if err != nil {
-		l.Warn("要生成 CA 证书，运行 $ openssl req -x509 -new -key ca.key -out ca.crt -days 3650")
-		panic(err)
+		return nil, nil, fmt.Errorf("%v\n    ($ openssl req -x509 -new -key ca.key -out ca.crt -days 3650)", err)
 	}
 
 	caCertBlock, _ := pem.Decode(caCertPEM)
 
-	caCert, err := x509.ParseCertificate(caCertBlock.Bytes)
+	caCert, err = x509.ParseCertificate(caCertBlock.Bytes)
+
 	if err != nil {
-		panic(err)
+		return nil, nil, err
 	}
 
-	server := &http.Server{
-		Addr: addr,
-		TLSConfig: &tls.Config{
-			GetCertificate: func(info *tls.ClientHelloInfo) (*tls.Certificate, error) {
-				host := strings.ToLower(info.ServerName)
-				l.Info("[Generate Certificate] %s", host)
-
-				crtPEM, keyPEM, err := generateCertificate(caKey, caCert, host)
-				if err != nil {
-					l.Error("Error generating certificate for %s: %v", host, err)
-					return nil, err
-				}
-
-				cert, err := tls.X509KeyPair(crtPEM, keyPEM)
-				if err != nil {
-					l.Error("Error loading certificate for %s: %v", host, err)
-					return nil, err
-				}
-
-				return &cert, nil
-			},
-		},
-	}
-
-	http.HandleFunc("/", handler)
-	return server
+	return
 }
 
-func generateCertificate(caKey any, caCert *x509.Certificate, host string) (certPEM, keyPEM []byte, err error) {
+// gen new certificate for host, derived by ca
+func GenerateCertificate(host string, caKey any, caCert *x509.Certificate) (*tls.Certificate, error) {
+	crtPEM, keyPEM, err := LoadCertificate(host, caKey, caCert)
+	if err != nil {
+		return nil, err
+	}
+
+	cert, err := tls.X509KeyPair(crtPEM, keyPEM)
+	if err != nil {
+		return nil, err
+	}
+
+	return &cert, nil
+}
+
+// load certificate from local path
+func LoadCertificate(host string, caKey any, caCert *x509.Certificate) (certPEM, keyPEM []byte, err error) {
 	priv, err := ecdsa.GenerateKey(elliptic.P384(), rand.Reader)
 	if err != nil {
 		return nil, nil, err

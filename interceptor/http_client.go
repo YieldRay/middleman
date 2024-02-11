@@ -22,6 +22,7 @@ func (trt transportRoundTrip) RoundTrip(req *http.Request) (*http.Response, erro
 	return trt.RoundTripImpl(req)
 }
 
+// just wrap string, making sure string is correct proxy server address
 type ProxyServer string
 
 func (ps ProxyServer) Proxy(targetUrl string) string {

@@ -1,27 +1,10 @@
-package interceptor
+package utils
 
 import (
-	"io"
-	"net/http"
-
 	"golang.org/x/sys/windows/registry"
 )
 
-func copyCloser(dst io.WriteCloser, src io.ReadCloser) {
-	defer dst.Close()
-	defer src.Close()
-	io.Copy(dst, src)
-}
-
-func copyHeader(dst, src http.Header) {
-	for k, vv := range src {
-		for _, v := range vv {
-			dst.Add(k, v)
-		}
-	}
-}
-
-func setProxySettings(proxyServer string) error {
+func SetProxySettings(proxyServer string) error {
 	k, err := registry.OpenKey(registry.CURRENT_USER, `Software\Microsoft\Windows\CurrentVersion\Internet Settings`, registry.QUERY_VALUE|registry.SET_VALUE)
 	if err != nil {
 		return err
@@ -44,7 +27,7 @@ func setProxySettings(proxyServer string) error {
 	return nil
 }
 
-func disableProxySettings() error {
+func DisableProxySettings() error {
 	k, err := registry.OpenKey(registry.CURRENT_USER, `Software\Microsoft\Windows\CurrentVersion\Internet Settings`, registry.ALL_ACCESS)
 	if err != nil {
 		return err
