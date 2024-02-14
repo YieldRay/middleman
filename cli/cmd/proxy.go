@@ -5,8 +5,8 @@ import (
 	"os"
 
 	"github.com/spf13/cobra"
-	"github.com/yieldray/middleman/impl"
-	"github.com/yieldray/middleman/interceptor"
+	"github.com/yieldray/middleman/cli/impl"
+	"github.com/yieldray/middleman/cli/interceptor"
 )
 
 var proxyCmd = &cobra.Command{

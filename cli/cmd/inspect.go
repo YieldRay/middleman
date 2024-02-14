@@ -2,7 +2,7 @@ package cmd
 
 import (
 	"github.com/spf13/cobra"
-	"github.com/yieldray/middleman/impl"
+	"github.com/yieldray/middleman/cli/impl"
 )
 
 var inspectCmd = &cobra.Command{

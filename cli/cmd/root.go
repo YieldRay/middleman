@@ -7,7 +7,7 @@ import (
 
 	"github.com/mborders/logmatic"
 	"github.com/spf13/cobra"
-	"github.com/yieldray/middleman/cmd/flags"
+	"github.com/yieldray/middleman/cli/cmd/flags"
 )
 
 var rootCmd = &cobra.Command{

@@ -7,9 +7,9 @@ import (
 	"os"
 	"time"
 
-	"github.com/yieldray/middleman/cmd/flags"
-	"github.com/yieldray/middleman/interceptor"
-	"github.com/yieldray/middleman/utils"
+	"github.com/yieldray/middleman/cli/cmd/flags"
+	"github.com/yieldray/middleman/cli/interceptor"
+	"github.com/yieldray/middleman/cli/utils"
 )
 
 // caKey can be "" to fallback to flag

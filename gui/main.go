@@ -1,4 +1,4 @@
-package gui
+package main
 
 import (
 	"net/url"
@@ -10,6 +10,10 @@ import (
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 )
+
+func main() {
+	Main()
+}
 
 var navBar = map[string]func(w fyne.Window) fyne.CanvasObject{
 	"proxy":   makeProxyTab,

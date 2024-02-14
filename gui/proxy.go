@@ -1,4 +1,4 @@
-package gui
+package main
 
 import (
 	"fyne.io/fyne/v2"
@@ -6,8 +6,8 @@ import (
 	"fyne.io/fyne/v2/dialog"
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/widget"
-	"github.com/yieldray/middleman/impl"
-	"github.com/yieldray/middleman/interceptor"
+	"github.com/yieldray/middleman/cli/impl"
+	"github.com/yieldray/middleman/cli/interceptor"
 )
 
 var isProxyRunning = false

@@ -2,7 +2,7 @@ package interceptor
 
 import (
 	"bufio"
-	"github.com/yieldray/middleman/utils"
+	"github.com/yieldray/middleman/cli/utils"
 	"net"
 	"net/http"
 	"os"

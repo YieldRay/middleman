@@ -14,15 +14,13 @@ middleman --help
 
 ## Build
 
-命令行
-
 ```sh
-go build
-```
+git clone https://github.com/YieldRay/middleman
+cd middleman
 
-仅 GUI
+# 命令行
+bash ./build_cli.sh
 
-```sh
-go install fyne.io/fyne/v2/cmd/fyne@latest
-fyne package -os windows
+# GUI
+bash ./build_gui.sh
 ```

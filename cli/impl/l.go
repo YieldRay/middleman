@@ -2,7 +2,7 @@ package impl
 
 import (
 	"github.com/mborders/logmatic"
-	"github.com/yieldray/middleman/cmd/flags"
+	"github.com/yieldray/middleman/cli/cmd/flags"
 )
 
 var l = logmatic.NewLogger()

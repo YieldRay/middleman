@@ -8,7 +8,7 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/yieldray/middleman/utils"
+	"github.com/yieldray/middleman/cli/utils"
 	// "fmt"
 	// "net/http/httputil"
 )
